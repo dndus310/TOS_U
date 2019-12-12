@@ -21,5 +21,46 @@ enum class EStartMode
 	SingleMode = 0,
 	MultiMode = 1,
 };
+USTRUCT()
+struct FStageSetting
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	float MaxFazeTime;
+	int SpawnCount;
+};
+USTRUCT()
+struct FStageData
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	TArray<FStageData> StageArray;
+};
+
+USTRUCT()
+struct FTracePosition
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY()
+		TArray<FVector> TracePositions;
+	FTracePosition()
+	{
+		TracePositions.Empty();
+	}
+};
+USTRUCT()
+struct FTraceData
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY()
+		TMap < FString, FTracePosition> TraceMap;
+	FTraceData()
+	{
+		TraceMap.Empty();
+	}
+};
+
 
 

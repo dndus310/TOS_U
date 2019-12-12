@@ -77,11 +77,11 @@ void AMonster::Tick(float DeltaTime)
 	TargetDir.Normalize();
 	TargetDir.Z = 0.f;
 
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + GetActorForwardVector() * 100.f,
+	/*DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + GetActorForwardVector() * 100.f,
 		FColor::Red, false, -1.f, 1, 3.f);
 
 	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + TargetDir * 100.f,
-		FColor::Green, false, -1.f, 1, 3.f);
+		FColor::Green, false, -1.f, 1, 3.f);*/
 
 	OnPushLocation();
 	SmoothLookat();

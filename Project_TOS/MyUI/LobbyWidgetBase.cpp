@@ -6,6 +6,7 @@
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Components/CanvasPanel.h"
+#include "Components/EditableTextBox.h"
 #include "MainGI.h"
 #include "Kismet/GameplayStatics.h"
 #include "Http.h"
@@ -18,7 +19,8 @@
 void ULobbyWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
+
+	AddressTextBox = Cast<UEditableTextBox>(GetWidgetFromName(TEXT("AddressTextBox")));
 	UseridText = Cast<UEditableTextBox>(GetWidgetFromName(TEXT("UseridText")));
 	UserpwdText = Cast<UEditableTextBox>(GetWidgetFromName(TEXT("UserpwdText")));
 	ConnectButton = Cast<UButton>(GetWidgetFromName(TEXT("ConnectButton")));
@@ -83,16 +85,14 @@ void ULobbyWidgetBase::Connect()
 	GetWorld()->GetTimerManager().SetTimer(FConnectTimeHandle, this, &ULobbyWidgetBase::CompleteDelayConnect, 0.5f, false);
 	ValuesPanel->SetVisibility(ESlateVisibility::Collapsed);
 	LoadingPanel->SetVisibility(ESlateVisibility::Visible);
-	IsLoginResult = true;
-	//if (GI)
-	//{
-	//	//UE_LOG(LogTemp, Error, TEXT("Log GI"));
-	//	FString url = "http://localhost:3000/login";
-	//	FString id = UseridText->GetText().ToString();
-	//	FString pwd = UserpwdText->GetText().ToString();
+	if (GI)
+	{
+		FString url = AddressTextBox->GetText().ToString() + "/login";
+		FString id = UseridText->GetText().ToString();
+		FString pwd = UserpwdText->GetText().ToString();
 
-	//	GI->HTTPPost(url, id, pwd, FHttpRequestCompleteDelegate::CreateUObject(this, &ULobbyWidgetBase::ConnectResult));
-	//}
+		GI->HTTPPost(url, id, pwd, FHttpRequestCompleteDelegate::CreateUObject(this, &ULobbyWidgetBase::ConnectResult));
+	}
 }
 void ULobbyWidgetBase::OpenLoginPanel()
 {

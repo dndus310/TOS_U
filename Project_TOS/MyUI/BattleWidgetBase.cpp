@@ -18,6 +18,7 @@ void UBattleWidgetBase::NativeConstruct()
 	ExpBar = Cast<UProgressBar>(GetWidgetFromName(TEXT("ExpBar")));
 	LevelCount = Cast<UEditableText>(GetWidgetFromName(TEXT("LevelCount")));
 
+	
 	GetAnimations(WidgetAnimations);
 	DrawAnim = *(WidgetAnimations.Find("DrawAnimation"));
 	ExpBar->Percent = 0.f;

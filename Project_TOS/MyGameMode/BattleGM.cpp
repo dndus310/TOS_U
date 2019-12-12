@@ -87,7 +87,14 @@ void ABattleGM::PostLogin(APlayerController * NewPlayer)
 	//	}
 	//}
 }
-
+void ABattleGM::Pause()
+{
+	UGameplayStatics::SetGamePaused(this, true);
+}
+void ABattleGM::UnPause()
+{
+	UGameplayStatics::SetGamePaused(this, false);
+}
 void ABattleGM::Logout(AController * Exiting)
 {
 	Super::Logout(Exiting);

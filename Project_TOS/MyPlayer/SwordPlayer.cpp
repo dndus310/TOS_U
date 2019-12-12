@@ -51,14 +51,9 @@ ASwordPlayer::ASwordPlayer()
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Status = CreateDefaultSubobject<UStatusComponent>(TEXT("UStatusComponent"));
 
-	//GetCharacterMovement()->SetIsReplicated(true);
-	//Status->SetIsReplicated(true);
-	//Collision->SetIsReplicated(true);
-
 	SpringArm->SetupAttachment(RootComponent);
 	Camera->SetupAttachment(SpringArm);
 	CameraLook->SetupAttachment(Camera);
-	//Weapon->SetupAttachment(GetMesh(), TEXT("Status"));
 	Weapon->SetupAttachment(GetMesh(), TEXT("Undraw"));
 	
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -88.f));
@@ -73,9 +68,7 @@ ASwordPlayer::ASwordPlayer()
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 
 	bReplicates = true;
-	
 }
-
 void ASwordPlayer::MovePush()
 {
 	if (HitDir.Size() != 0.f)
@@ -85,7 +78,6 @@ void ASwordPlayer::MovePush()
 		SetActorLocation(GetActorLocation() + HitDir * 1000.f  * GetWorld()->DeltaTimeSeconds);
 	}
 }
-
 FVector ASwordPlayer::GetUnitSwordLocation_Implementation(FName SocketName) const
 {
 	return Weapon->GetSocketLocation(SocketName);
@@ -107,8 +99,6 @@ float ASwordPlayer::TakeDamage(float Damage, FDamageEvent const & DamageEvent, A
 	{
 		return 0.f;
 	}
-	//UE_LOG(LogTemp, Log, TEXT("DamageHit"));
-
 	if (DamageEvent.GetTypeID() == FPointDamageEvent::ClassID) // DamegeType 유형
 	{
 		FPointDamageEvent* Event = (FPointDamageEvent*)&DamageEvent;
@@ -166,21 +156,15 @@ float ASwordPlayer::TakeDamage(float Damage, FDamageEvent const & DamageEvent, A
 			}
 		}
 	}
-
 	return 0.0f;
 }
-
-// Called when the game starts or when spawned
 void ASwordPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
 	Status->SetUnitStatus(100.f, 70.f, 50.f, 10.f); // 임시
 
-	
 	NormalSpeed = 200.f;
-	//SprintMultiple = 3.f;
-	//SprintRateMax = 1.2f;
 
 	Status->OnDeadEvent.BindUObject(this, &ASwordPlayer::OnDeadEvent);
 	Collision->OnHitEvent.BindUObject(this, &ASwordPlayer::OnHitEvent);
@@ -188,7 +172,6 @@ void ASwordPlayer::BeginPlay()
 	NextTargetArmLength = SpringArm->TargetArmLength;
 
 	PlayerAnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-	//PlayerAnimInst->GetOwningActor()->SetReplicates(true);
 
 	ComboSystem->InitComboStateMap(AttackSectionName, ManualKeyName);
 
@@ -196,8 +179,6 @@ void ASwordPlayer::BeginPlay()
 
 	SocketNames = Weapon->GetAllSocketNames();
 	SocketNames.RemoveAt(SocketNames.Num() - 1);
-
-
 
 	Collision->InitCollisionSocket(SocketNames);
 	if (GetNetMode() == ENetMode::NM_ListenServer || 

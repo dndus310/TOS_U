@@ -6,6 +6,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "LobbyGS.generated.h"
 
+
 /**
  * 
  */
@@ -13,5 +14,6 @@ UCLASS()
 class PROJECT_TOS_API ALobbyGS : public AGameStateBase
 {
 	GENERATED_BODY()
-	
+
+
 };

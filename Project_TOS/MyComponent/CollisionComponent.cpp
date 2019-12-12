@@ -7,6 +7,11 @@
 #include "MyInterface/UnitInterface.h"
 #include "UnrealNetwork.h"
 #include "GameFramework/Pawn.h"
+#include "Kismet/GameplayStatics.h"
+#include "MainGI.h"
+#include "Define.h"
+
+
 // Sets default values for this component's properties
 UCollisionComponent::UCollisionComponent()
 {
@@ -23,13 +28,14 @@ void UCollisionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	GameInstance = Cast<UMainGI>(UGameplayStatics::GetGameInstance(this));
+
 	OwnerPawn = Cast<APawn>(GetOwner());
 	// ...
 }
 void UCollisionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UCollisionComponent, IsCollisionCheck);
 }
 // Called every frame
 void UCollisionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -37,73 +43,94 @@ void UCollisionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	SwordCollision();
-
 	// ...
 }
 void UCollisionComponent::InitCollisionSocket(TArray<FName> socketNames)
 {
 	this->SocketNames = socketNames;
 }
-
 void UCollisionComponent::SwordCollision()
 {
 	bool Result = false;
 	if (IsCollisionCheck) //특정 애니메이션 프레임일때
 	{
 		IsCollisionStart = true;
-
-		TArray<AActor*> IgnoreObjects = {};
-		TArray<FHitResult> OutHits = {};
-		//UE_LOG(LogClass, Error, TEXT("Log Start"));
-
 		TMap<FName, FVector>::TRangedForIterator iter = SocketLocations.begin();
 		TArray<FVector> Sockets;
 		FName SocketName = "";
-
+		
 		for (; iter != SocketLocations.end(); ++iter)
 		{
 			FVector Start = (*iter).Value;
 			FVector End = IUnitInterface::Execute_GetUnitSwordLocation(GetOwner(), (*iter).Key);
 			SocketName = (*iter).Key;
 
-			Result = UKismetSystemLibrary::LineTraceMultiForObjects(this, Start, End, ObjectTypes,
-				bTraceComlex, IgnoreObjects, (EDrawDebugTrace::Type)DrawDebugTrace, OutHits,
-				bIgnoreSelf, FLinearColor::Red, FLinearColor::Green, DrawTime);
-
-			if (Result)
+			if (GetNetMode() == ENetMode::NM_ListenServer || GetNetMode() == ENetMode::NM_DedicatedServer)
 			{
-				for (int i = 0; i < OutHits.Num(); ++i) // 충돌된 오브젝트를 한번씩만 받아온다
+				FString KeyStr = (*iter).Key.ToString();
+				if (!TraceData.TraceMap.Contains(KeyStr))
 				{
-					if (HitObjects.Find(OutHits[i].GetActor()) == INDEX_NONE) // 충돌 한번만 하기위해
-					{
-						HitObjects.Emplace(OutHits[i].GetActor());
-						SaveHits.Emplace(OutHits[i]);
-						IsCollisionStart = true;
+					TraceData.TraceMap.Emplace(KeyStr);
+				}
+				else
+				{
+					TraceData.TraceMap[KeyStr].TracePositions.Emplace((*iter).Value);
+				}
+			}
+			if (GetNetMode() == ENetMode::NM_Standalone)
+			{
+				Result = UKismetSystemLibrary::LineTraceMultiForObjects(this, Start, End, ObjectTypes,
+					bTraceComlex, IgnoreObjects, (EDrawDebugTrace::Type)DrawDebugTrace, OutHits,
+					bIgnoreSelf, FLinearColor::Red, FLinearColor::Green, DrawTime);
 
-						if (!OutHits[i].GetActor()->ActorHasTag(TEXT("Player")))
+				if (Result)
+				{
+					for (int i = 0; i < OutHits.Num(); ++i) // 충돌된 오브젝트를 한번씩만 받아온다
+					{
+						if (HitObjects.Find(OutHits[i].GetActor()) == INDEX_NONE) // 충돌 한번만 하기위해
 						{
-							OnHitEvent.ExecuteIfBound(OutHits[i]);
-						}
-						else
-						{
-							if (OutHits[i].GetActor()->HasAuthority())
+							HitObjects.Emplace(OutHits[i].GetActor());
+							SaveHits.Emplace(OutHits[i]);
+							IsCollisionStart = true;
+
+							if (!OutHits[i].GetActor()->ActorHasTag(TEXT("Player")))
 							{
-								ExcuteHitEvent();
+								OnHitEvent.ExecuteIfBound(OutHits[i]);
+							}
+							else
+							{
+								if (OutHits[i].GetActor()->HasAuthority())
+								{
+									ExcuteHitEvent();
+								}
 							}
 						}
 					}
 				}
 			}
 		}
+
 	}
 	else if (!IsCollisionCheck && IsCollisionStart)
 	{
-		//CtoS_SwordCollision();
+		if (GetNetMode() == ENetMode::NM_ListenServer || GetNetMode() == ENetMode::NM_DedicatedServer)
+		{
+			if (TraceData.TraceMap.Num() > 1)
+			{
+				GameInstance->StructToJsonSaveData(TraceData, "TraceData");
+				TraceData.TraceMap.Empty();
+				CtoS_SwordCollision();
+			}
+		}
 		IsCollisionStart = false;
 	}
 	else
 	{
-		//SocketLocationsArray.Empty();
+		if (GetNetMode() == ENetMode::NM_ListenServer || GetNetMode() == ENetMode::NM_DedicatedServer)
+		{
+			TraceData.TraceMap.Empty();
+			HitResult = false;
+		}
 		HitObjects.Empty();
 		SaveHits.Empty();
 	}
@@ -114,14 +141,51 @@ void UCollisionComponent::SwordCollision()
 }
 void UCollisionComponent::CtoS_SwordCollision_Implementation()
 {
+	GameInstance->JsonToStructLoadData(TraceData, "TraceData");
 
+	TArray<FHitResult> Hits;
+	for (auto MapIter : TraceData.TraceMap)
+	{
+		for (int i = 0; i < MapIter.Value.TracePositions.Num(); ++i)
+		{
+			if (i + 1 >= MapIter.Value.TracePositions.Num())
+			{
+				break;
+			}
+			FVector Start = MapIter.Value.TracePositions[i];
+			FVector End = MapIter.Value.TracePositions[i + 1];
+
+			if (UKismetSystemLibrary::LineTraceMultiForObjects(this, Start, End, ObjectTypes,
+				bTraceComlex, IgnoreObjects, (EDrawDebugTrace::Type)DrawDebugTrace, Hits,
+				bIgnoreSelf, FLinearColor::Red, FLinearColor::Green, DrawTime))
+			{
+				HitResult = true;
+			}
+			OutHits.Append(Hits);
+		}
+	}
+	StoA_SwordCollision(HitResult);
+}
+void UCollisionComponent::StoA_SwordCollision_Implementation(bool Result)
+{
+	if (Result)
+	{
+		for (int i = 0; i < OutHits.Num(); ++i) // 충돌된 오브젝트를 한번씩만 받아온다
+		{
+			if (HitObjects.Find(OutHits[i].GetActor()) == INDEX_NONE) // 충돌 한번만 하기위해
+			{
+				HitObjects.Emplace(OutHits[i].GetActor());
+				SaveHits.Emplace(OutHits[i]);
+			}
+		}
+		if (SaveHits.Num() > 0)
+		{
+			ExcuteHitEvent();
+		}
+	}
 }
 void UCollisionComponent::ExcuteHitEvent()
 {
-	/*for (int i = 0; i < SaveHits.Num(); ++i)
-	{
-		OnHitEvent.ExecuteIfBound(SaveHits[i]);
-	}*/
 	CtoS_ExcuteHitEvent();
 }
 void UCollisionComponent::CtoS_ExcuteHitEvent_Implementation()
@@ -130,6 +194,7 @@ void UCollisionComponent::CtoS_ExcuteHitEvent_Implementation()
 	{
 		OnHitEvent.ExecuteIfBound(SaveHits[i]);
 	}
+	SaveHits.Empty();
 }
 void UCollisionComponent::SetCollisionCheck(bool Result)
 {

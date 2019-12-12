@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Define.h"
 #include "MyInterface/UnitInterface.h"
 #include "CollisionComponent.generated.h"
 
@@ -34,17 +35,16 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void InitCollisionSocket(TArray<FName> socketNames);
-
-	void RequestSockets(TArray<FVector> socketLocations);
-
 private:
 	void SwordCollision();
-
-	void CheckCollision();
 
 	UFUNCTION(Server, Reliable)
 	void CtoS_SwordCollision();
 	void CtoS_SwordCollision_Implementation();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void StoA_SwordCollision(bool Result);
+	void StoA_SwordCollision_Implementation(bool Result);
 
 	void ExcuteHitEvent();
 
@@ -53,17 +53,20 @@ private:
 	void CtoS_ExcuteHitEvent_Implementation();
 private:
 	APawn* OwnerPawn;
-	TArray<FHitResult> SaveHits;
-	TArray<AActor*> HitObjects;
-	TArray<FName> SocketNames;
-	TMap<FName, FVector> SocketLocations;
+	class UMainGI* GameInstance;
+	FTraceData TraceData;
 
-	TMap<FName, TArray<FVector>> SocketLocationsArray;
+	TArray<FHitResult> SaveHits = {};
+	TArray<FHitResult> OutHits = {};
+	TArray<AActor*> HitObjects = {};
+	TArray<FName> SocketNames = {};
+	TMap<FName, FVector> SocketLocations = {};
+	TArray<AActor*> IgnoreObjects = {};
+	
 
-
+	bool HitResult = false;
 	bool IsCollisionStart = false;
 
-	UPROPERTY(Replicated)
 	bool IsCollisionCheck = false;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

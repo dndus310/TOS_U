@@ -19,6 +19,9 @@ public:
 	virtual void NativeConstruct() override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UEditableTextBox* AddressTextBox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UEditableTextBox* UseridText;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

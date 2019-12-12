@@ -6,15 +6,51 @@
 #include "Json.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
+#include "JsonObjectConverter.h"
+#include "JsonUtilities.h"
+
 
 UMainGI::UMainGI() : 
 	Http(NULL), Userid(FString()), Userpwd(FString())
 {
+	
+}
+template<typename StructType>
+StructType UMainGI::JsonToStructLoadData(StructType& OutStruct, const FString FileName)
+{
+	FString Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()) + "/" + FileName + ".json";
+	FString JsonData = "";
+	FFileHelper::LoadFileToString(JsonData, *Path);
 
+	// LoadJSON
+	if (FJsonObjectConverter::JsonObjectStringToUStruct(JsonData, &OutStruct, 0, 0))
+	{
+		UE_LOG(LogClass, Log, TEXT("Json Load Success"));
+	}
+	return OutStruct;
+}
+template<typename StructType>
+void UMainGI::StructToJsonSaveData(const StructType & InStruct, const FString NewFileName)
+{
+	FString Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()) + "/" + NewFileName + ".json";
+	FString JsonData = "";
 
+	// SaveJSON
+	if (!FJsonObjectConverter::UStructToJsonObjectString(InStruct, JsonData, 0, 0))
+	{
+		UE_LOG(LogClass, Log, TEXT("Json Save Success"));
+	}
+	FFileHelper::SaveStringToFile(*JsonData, *Path);
+}
+FString UMainGI::ServerLoadData(const FString TableName, const FString UserId, const FString Password)
+{
+	return FString();
 }
 
-void UMainGI::HTTPPost(FString URL, FString UserId, FString Password, FHttpRequestCompleteDelegate ProcessRequestComplete)
+void UMainGI::ServerSaveData(const FString TableName, const FString JsonData, FHttpRequestCompleteDelegate ProcessRequestComplete)
+{
+}
+void UMainGI::HTTPPost(const FString URL, const FString UserId, const FString Password, FHttpRequestCompleteDelegate ProcessRequestComplete)
 {
 	if (UserId == "\0" || Password == "\0")
 	{
@@ -46,12 +82,12 @@ void UMainGI::HTTPResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Res
 	}
 }
 
-void UMainGI::SaveAccount(FText id, FText pwd)
+void UMainGI::SaveAccount(const FText id, const FText pwd)
 {
 	Userid = id.ToString();
 	Userpwd = pwd.ToString();
 }
-void UMainGI::SetLevelName(FString LevelName)
+void UMainGI::SetLevelName(const FString LevelName)
 {
 	CurrentLevelName = LevelName;
 }

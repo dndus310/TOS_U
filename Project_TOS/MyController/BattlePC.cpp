@@ -3,15 +3,21 @@
 
 #include "BattlePC.h"
 #include "MyUI/BattleWidgetBase.h"
+#include "MyUI/PlayerInfoWidgetBase.h"
 #include "MyPlayer/SwordPlayer.h"
 #include "Kismet/GameplayStatics.h"
 #include "MyPlayerState/BattlePS.h"
+#include "Components/CanvasPanel.h"
+#include "MyGameMode/BattleGM.h"
+#include "TimerManager.h"
 
 ABattlePC::ABattlePC()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	BattleWidgetClass = UBattleWidgetBase::StaticClass();
+
+	PlayerInfoWidgetClass = UPlayerInfoWidgetBase::StaticClass();
 }
 
 void ABattlePC::BeginPlay()
@@ -25,6 +31,9 @@ void ABattlePC::BeginPlay()
 	{
 		SetInputMode(FInputModeGameOnly());
 		bShowMouseCursor = false;
+
+		PlayerInfoWidgetBase = CreateWidget<UPlayerInfoWidgetBase>(this, PlayerInfoWidgetClass);
+		PlayerInfoWidgetBase->AddToViewport();
 
 		BattleWidgetBase = CreateWidget<UBattleWidgetBase>(this, BattleWidgetClass);
 		BattleWidgetBase->AddToViewport();
@@ -61,6 +70,27 @@ void ABattlePC::SetupInputComponent()
 	Super::SetupInputComponent();
 
 	InputComponent->BindAction(TEXT("Manualkey"), IE_Pressed, this, &ABattlePC::ShowManualKey);
+
+	InputComponent->BindAction(TEXT("PlayerInfo"), IE_Pressed, this, &ABattlePC::ShowPlayerInfo);
+}
+void ABattlePC::ShowPlayerInfo()
+{
+	if (GetNetMode() == ENetMode::NM_Standalone)
+	{
+		if (PlayerInfoWidgetBase->InfoPanel->Visibility == ESlateVisibility::Hidden)
+		{
+			ABattleGM* GM = Cast<ABattleGM>(UGameplayStatics::GetGameMode(this));
+
+			if (GM)
+			{
+				GM->Pause();
+
+				bShowMouseCursor = true;
+				PlayerInfoWidgetBase->InfoPanel->SetVisibility(ESlateVisibility::Visible);
+				SetInputMode(FInputModeUIOnly());
+			}
+		}
+	}
 }
 void ABattlePC::ShowManualKey()
 {

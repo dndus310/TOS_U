@@ -272,14 +272,10 @@ void UPlayerAnimInstance::AnimNotify_TraceStart(UAnimNotify * Notify)
 	{
 		return;
 	}
-
 	if (OriginPlayer->IsLocallyControlled())
 	{
 		OriginPlayer->Collision->SetCollisionCheck(true);
 	}
-
-	
-
 }
 void UPlayerAnimInstance::AnimNotify_TraceEnd(UAnimNotify * Notify)
 {

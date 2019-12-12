@@ -22,6 +22,8 @@ public:
 	virtual void PostLogin(APlayerController * NewPlayer) override;
 	virtual void Logout(AController * Exiting) override;
 public:
+	void Pause();
+	void UnPause();
 	void StartSpawn();
 	void EndSpawn();
 	void NextLevel(FName LevelName);
@@ -32,6 +34,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<class ARangedMonster> RangedMonsterClass;
 
+
+	FTimerHandle PauseHandle;
 	FTimerHandle SpawnTimer;
 	TArray<AActor*> SpawnPoints;
 	ESpawnGroup RequestGroup = ESpawnGroup::GroupA;
